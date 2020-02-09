@@ -27,6 +27,28 @@ matrix_identity_server_url: "{{ ('https://' + matrix_server_fqn_matrix) if matri
 
 ######################################################################
 #
+# matrix-bot-maubot
+#
+######################################################################
+
+matrix_maubot_enabled: false
+
+matrix_maubot_container_http_gateway_host_bind_port: "{{ '' if matrix_nginx_proxy_enabled else '127.0.0.1:41080' }}"
+matrix_maubot_container_http_api_host_bind_port: "{{ '' if matrix_nginx_proxy_enabled else '127.0.0.1:41081' }}"
+
+matrix_maubot_matrix_homeserver_api_endpoint: "http://matrix-synapse:8008"
+
+matrix_maubot_matrix_registration_shared_secret: "{{ matrix_synapse_registration_shared_secret }}"
+
+######################################################################
+#
+# /matrix-bot-maubot
+#
+######################################################################
+
+
+######################################################################
+#
 # matrix-bridge-appservice-discord
 #
 ######################################################################

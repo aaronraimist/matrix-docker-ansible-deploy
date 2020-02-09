@@ -25,6 +25,7 @@
     - matrix-bridge-mx-puppet-instagram
     - matrix-bridge-sms
     - matrix-bot-matrix-reminder-bot
+    - matrix-bot-maubot
     - matrix-synapse
     - matrix-synapse-admin
     - matrix-registration

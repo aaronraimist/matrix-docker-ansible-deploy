@@ -1,0 +1,40 @@
+#jinja2: lstrip_blocks: "True"
+[Unit]
+Description=Matrix Bot Maubot
+{% for service in matrix_maubot_systemd_required_services_list %}
+Requires={{ service }}
+After={{ service }}
+{% endfor %}
+{% for service in matrix_maubot_systemd_wanted_services_list %}
+Wants={{ service }}
+{% endfor %}
+
+[Service]
+Type=simple
+ExecStartPre=-/usr/bin/docker kill matrix-maubot
+ExecStartPre=-/usr/bin/docker rm matrix-maubot
+# Intentional delay, so that the homeserver (we likely depend on) can manage to start.
+ExecStartPre=/bin/sleep 5
+
+ExecStart=/usr/bin/docker run --rm --name matrix-maubot \
+			--log-driver=none \
+			--network={{ matrix_docker_network }} \
+			{% if matrix_maubot_container_http_host_bind_port %}
+			-p {{ matrix_maubot_container_http_host_bind_port }}:8080 \
+			{% endif %}
+			-v {{ matrix_maubot_config_path }}:/config:z \
+			-v {{ matrix_maubot_plugin_path }}:/plugins:z \
+			-v {{ matrix_maubot_data_path }}:/data:z \
+			{% for arg in matrix_maubot_container_extra_arguments %}
+			{{ arg }} \
+			{% endfor %}
+			{{ matrix_maubot_docker_image }}
+
+ExecStop=-/usr/bin/docker kill matrix-maubot
+ExecStop=-/usr/bin/docker rm matrix-maubot
+Restart=always
+RestartSec=30
+SyslogIdentifier=matrix-maubot
+
+[Install]
+WantedBy=multi-user.target

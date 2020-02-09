@@ -1,0 +1,58 @@
+---
+
+- name: Ensure Maubot image is pulled
+  docker_image:
+    name: "{{ matrix_maubot_docker_image }}"
+    source: "{{ 'pull' if ansible_version.major > 2 or ansible_version.minor > 7 else omit }}"
+    force_source: "{{ matrix_maubot_docker_image_force_pull if ansible_version.major > 2 or ansible_version.minor >= 8 else omit }}"
+    force: "{{ omit if ansible_version.major > 2 or ansible_version.minor >= 8 else matrix_maubot_docker_image_force_pull }}"
+
+- name: Ensure Maubot paths exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0750
+    owner: "{{ matrix_user_username }}"
+    group: "{{ matrix_user_username }}"
+  with_items:
+    - "{{ matrix_maubot_base_path }}"
+    - "{{ matrix_maubot_config_path }}"
+    - "{{ matrix_maubot_plugin_path }}"
+    - "{{ matrix_maubot_data_path }}"
+
+- name: Check if an old database file already exists
+  stat:
+    path: "{{ matrix_maubot_base_path }}/maubot.db"
+  register: matrix_maubot_stat_database
+
+- name: (Data relocation) Ensure matrix-maubot.service is stopped
+  service:
+    name: matrix-maubot
+    state: stopped
+    daemon_reload: yes
+  failed_when: false
+  when: "matrix_maubot_stat_database.stat.exists"
+
+- name: (Data relocation) Move maubot database file to ./data directory
+  command: "mv {{ matrix_maubot_base_path }}/maubot.db {{ matrix_maubot_data_path }}/maubot.db"
+  when: "matrix_maubot_stat_database.stat.exists"
+
+- name: Ensure maubot config.yaml installed
+  copy:
+    content: "{{ matrix_maubot_configuration|to_nice_yaml }}"
+    dest: "{{ matrix_maubot_config_path }}/config.yaml"
+    mode: 0644
+    owner: "{{ matrix_user_username }}"
+    group: "{{ matrix_user_username }}"
+
+- name: Ensure matrix-maubot.service installed
+  template:
+    src: "{{ role_path }}/templates/systemd/matrix-maubot.service.j2"
+    dest: "/etc/systemd/system/matrix-maubot.service"
+    mode: 0644
+  register: matrix_maubot_systemd_service_result
+
+- name: Ensure systemd reloaded after matrix-maubot.service installation
+  service:
+    daemon_reload: yes
+  when: "matrix_maubot_systemd_service_result.changed"
