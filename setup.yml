@@ -27,6 +27,7 @@
     - matrix-bridge-sms
     - matrix-bot-matrix-reminder-bot
     - matrix-synapse
+    - matrix-dendrite
     - matrix-synapse-admin
     - matrix-registration
     - matrix-client-element
